@@ -11,12 +11,12 @@ from keras.layers.noise import GaussianNoise
 def make_model():
     model = Sequential()
 
-    L2_REGULARIZATION = 0.01
+    L2_REGULARIZATION = 0
     L1_REGULARIZATION = 0
     INITIAL_DROPOUT = 0
     DROPOUT = 0
-    FC_DROPOUT = 0.5
-    GAUSSIAN_NOISE = 0.1
+    FC_DROPOUT = 0
+    GAUSSIAN_NOISE = 0
 
     model.add(ZeroPadding2D((1, 1), input_shape=(1, 257, 173)))
 
