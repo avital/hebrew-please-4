@@ -1,0 +1,5 @@
+*~
+data
+*.pyc
+architecture.json
+weights.hdf5
