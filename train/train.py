@@ -35,13 +35,13 @@ def smallhash(str):
     return int(bighash[0], 16) % 8
 
 samples = {
-    1: [file for file in listwavfiles('./data/speech') if smallhash(file) > 0],
-    0: [file for file in listwavfiles('./data/non-speech') if smallhash(file) > 0]
+    1: [file for file in listwavfiles('./data/speech') if smallhash(file) != 1],
+    0: [file for file in listwavfiles('./data/non-speech') if smallhash(file) != 1]
 }
 
 val_samples = {
-    1: [file for file in listwavfiles('./data/speech') if smallhash(file) == 0],
-    0: [file for file in listwavfiles('./data/non-speech') if smallhash(file) == 0]
+    1: [file for file in listwavfiles('./data/speech') if smallhash(file) == 1],
+    0: [file for file in listwavfiles('./data/non-speech') if smallhash(file) == 1]
 }
 
 def normalize_spectrogram(spectrogram):
@@ -101,7 +101,7 @@ def main():
         nb_val_samples=nb_val_samples,
         callbacks=[
             ModelCheckpoint("weights.hdf5"),
-            TensorBoard(log_dir='/mnt/nfs/is-speech-5-no-reg',
+            TensorBoard(log_dir='/mnt/nfs/is-speech-6-train-silence-no-reg',
                         histogram_freq=20,
                         write_graph=True)
         ]
