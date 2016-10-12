@@ -60,12 +60,10 @@ def main():
             for i in xrange(batch_size):
                 label = random.choice([0, 1])
                 sample = random.choice(samples[label])
-#                print sample
                 sample_length = librosa.core.get_duration(filename=sample)
                 offset_start = random.uniform(0, sample_length-2)
                 sample_segment_data, sr = librosa.core.load(sample, sr=11025, offset=offset_start, duration=2)
                 sample_segment_spectrogram = numpy.expand_dims(normalize_spectrogram(numpy.absolute(librosa.stft(sample_segment_data, n_fft=512))), axis=0)
-                print sample_segment_spectrogram
                 batch_data.append(sample_segment_spectrogram)
                 batch_labels.append(label)
             yield (numpy.stack(batch_data), batch_labels)
