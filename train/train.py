@@ -103,7 +103,7 @@ def main():
         nb_val_samples=nb_val_samples,
         callbacks=[
             ModelCheckpoint("weights.hdf5"),
-            TensorBoard(log_dir='/mnt/nfs/is-speech-2-adadelta-normalized-spectrogram',
+            TensorBoard(log_dir='/mnt/nfs/is-speech-4',
                         histogram_freq=20,
                         write_graph=True)
         ]
