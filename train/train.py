@@ -101,7 +101,7 @@ def main():
         nb_val_samples=nb_val_samples,
         callbacks=[
             ModelCheckpoint("weights.hdf5"),
-            TensorBoard(log_dir='/mnt/nfs/is-speech-8-noise-in-all-layers-no-dropout',
+            TensorBoard(log_dir='/mnt/nfs/is-speech-7-dropout',
                         histogram_freq=20,
                         write_graph=True)
         ]
