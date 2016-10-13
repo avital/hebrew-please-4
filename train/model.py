@@ -15,8 +15,8 @@ def make_model():
     L1_REGULARIZATION = 0
     INITIAL_DROPOUT = 0
     DROPOUT = 0
-    FC_DROPOUT = 0.5
-    GAUSSIAN_NOISE = 0
+    FC_DROPOUT = 0
+    GAUSSIAN_NOISE = 0.03
 
     model.add(ZeroPadding2D((1, 1), input_shape=(1, 257, 173)))
 
