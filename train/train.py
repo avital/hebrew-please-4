@@ -45,9 +45,8 @@ val_samples = {
 }
 
 def normalize_spectrogram(spectrogram):
-    return spectrogram
-#    spectrogram2 = spectrogram + 0.00001
-#    return spectrogram2 / numpy.sum(spectrogram2, 0)
+    spectrogram2 = spectrogram + 0.00001
+    return spectrogram2 / numpy.sum(spectrogram2, 0)
 
 def main():
     nb_val_samples = 512
@@ -102,7 +101,7 @@ def main():
         nb_val_samples=nb_val_samples,
         callbacks=[
             ModelCheckpoint("weights.hdf5"),
-            TensorBoard(log_dir='/mnt/nfs/is-speech-11-dont-normalize',
+            TensorBoard(log_dir='/mnt/nfs/is-speech-10-add-spc-silence',
                         histogram_freq=20,
                         write_graph=True)
         ]
