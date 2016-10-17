@@ -100,8 +100,9 @@ def main():
         validation_data=val_data_generator(),
         nb_val_samples=nb_val_samples,
         callbacks=[
-            ModelCheckpoint("weights.hdf5"),
-            TensorBoard(log_dir='/mnt/nfs/is-speech-12-more-data',
+            ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
+            EarlyStopping(monitor="val_acc", patience=8),
+            TensorBoard(log_dir='/mnt/nfs/is-speech-13-early-stopping',
                         histogram_freq=20,
                         write_graph=True)
         ]
