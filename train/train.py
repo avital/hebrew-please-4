@@ -35,13 +35,17 @@ def smallhash(str):
     return int(bighash[0], 16) % 8
 
 samples = {
-    1: [file for file in listwavfiles('./data/speech') if smallhash(file) != 1],
-    0: [file for file in listwavfiles('./data/non-speech') if smallhash(file) != 1]
+    1: [file for file in listwavfiles('./data/speech-english')
+        if not file.endswith('-avital4.wav')],
+    0: [file for file in listwavfiles('./data/speech-hebrew')
+        if not file.endswith('-avital4.wav')]
 }
 
 val_samples = {
-    1: [file for file in listwavfiles('./data/speech') if smallhash(file) == 1],
-    0: [file for file in listwavfiles('./data/non-speech') if smallhash(file) == 1]
+    1: [file for file in listwavfiles('./data/speech-english')
+        if file.endswith('-avital4.wav')],
+    0: [file for file in listwavfiles('./data/speech-hebrew')
+        if file.endswith('-avital4.wav')]
 }
 
 def normalize_spectrogram(spectrogram):
