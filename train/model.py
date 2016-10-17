@@ -20,7 +20,7 @@ def make_model():
 
     model.add(ZeroPadding2D((1, 1), input_shape=(1, 257, 173)))
 
-    model.add(GaussianNoise(GAUSSIAN_NOISE))
+    model.add(GaussianNoise(0.03))
     model.add(Convolution2D(32, 5, 3, subsample=(3, 2), W_regularizer=l2(L2_REGULARIZATION)))
     model.add(BatchNormalization())
     model.add(ELU())
