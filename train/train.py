@@ -57,7 +57,7 @@ def add_gaussian_noise(spectrogram, scale):
 
     Add random Guassian noise on all frequency bins
     """
-    return spectrogram + np.random.normal(0, scale, spectrogram.shape)
+    return np.abs(spectrogram + np.random.normal(0, scale, spectrogram.shape))
 
 def stretch(spectrogram, factor, num_columns):
     """
