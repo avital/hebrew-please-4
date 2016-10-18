@@ -39,26 +39,22 @@ def make_model():
     model.add(Convolution2D(256, 3, 1, W_regularizer=l1(L1_REGULARIZATION)))
 
     model.add(GaussianNoise(GAUSSIAN_NOISE))
-    model.add(Convolution2D(256, 36, 1, W_regularizer=l1(L1_REGULARIZATION)))
+    model.add(Convolution2D(256, 3, 3, W_regularizer=l1(L1_REGULARIZATION)))
+    model.add(GaussianNoise(GAUSSIAN_NOISE))
+    model.add(Convolution2D(256, 3, 3, W_regularizer=l1(L1_REGULARIZATION)))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
 
+    model.add(GaussianNoise(GAUSSIAN_NOISE))
+    model.add(Convolution2D(256, 3, 3, W_regularizer=l1(L1_REGULARIZATION)))
+    model.add(GaussianNoise(GAUSSIAN_NOISE))
+    model.add(Convolution2D(256, 3, 3, W_regularizer=l1(L1_REGULARIZATION)))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(GaussianNoise(GAUSSIAN_NOISE))
+    model.add(Convolution2D(256, 1, 3, W_regularizer=l2(L2_REGULARIZATION)))
     model.add(GaussianNoise(GAUSSIAN_NOISE))
     model.add(Convolution2D(256, 1, 3, W_regularizer=l2(L2_REGULARIZATION)))
     model.add(AveragePooling2D(pool_size=(1, 2)))
-
-    model.add(GaussianNoise(GAUSSIAN_NOISE))
-    model.add(Convolution2D(256, 1, 3, W_regularizer=l2(L2_REGULARIZATION)))
-    model.add(AveragePooling2D(pool_size=(1, 2)))
-
-    model.add(GaussianNoise(GAUSSIAN_NOISE))
-    model.add(Convolution2D(256, 1, 3, W_regularizer=l2(L2_REGULARIZATION)))
-    model.add(AveragePooling2D(pool_size=(1, 2)))
-
-    model.add(GaussianNoise(GAUSSIAN_NOISE))
-    model.add(Convolution2D(256, 1, 3, W_regularizer=l2(L2_REGULARIZATION)))
-    model.add(AveragePooling2D(pool_size=(1, 2)))
-
-    model.add(GaussianNoise(GAUSSIAN_NOISE))
-    model.add(Convolution2D(256, 1, 3, W_regularizer=l2(L2_REGULARIZATION)))
 
     model.add(Flatten())
 
