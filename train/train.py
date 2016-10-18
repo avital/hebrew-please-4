@@ -107,7 +107,7 @@ def main():
                 sample_duration = 3
                 offset_start = random.uniform(0, sample_length-sample_duration)
                 sample_segment_data, sr = librosa.core.load(
-                    sample, sr=11025, offset=offset_start, duration=duration
+                    sample, sr=11025, offset=offset_start, duration=sample_duration
                 )
                 abs_spectrogram = np.absolute(librosa.stft(sample_segment_data, n_fft=512))
 
