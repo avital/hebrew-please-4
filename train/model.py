@@ -11,7 +11,7 @@ from keras.layers.noise import GaussianNoise
 def make_model():
     model = Sequential()
 
-    L2_REGULARIZATION = 0.03
+    L2_REGULARIZATION = 0.1
     L1_REGULARIZATION = 0
     INITIAL_DROPOUT = 0
     DROPOUT = 0
