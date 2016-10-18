@@ -106,7 +106,7 @@ def main():
         callbacks=[
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/is-speech-19-english-vs-hebrew-l2-reg-0.1',
+            TensorBoard(log_dir='/mnt/nfs/is-speech-17-english-vs-hebrew-l2-reg-0.03',
                         histogram_freq=20,
                         write_graph=True)
         ]
