@@ -38,16 +38,16 @@ def smallhash(str):
     return int(bighash[0], 16) % 8
 
 samples = {
-    1: [file for file in listwavfiles('./data/speech-english')
+    1: [file for file in listwavfiles('./data2/speech-english')
         if not file.endswith('-avital4.wav')],
-    0: [file for file in listwavfiles('./data/speech-hebrew')
+    0: [file for file in listwavfiles('./data2/speech-hebrew')
         if not file.endswith('-avital4.wav')]
 }
 
 val_samples = {
-    1: [file for file in listwavfiles('./data/speech-english')
+    1: [file for file in listwavfiles('./data2/speech-english')
         if file.endswith('-avital4.wav')],
-    0: [file for file in listwavfiles('./data/speech-hebrew')
+    0: [file for file in listwavfiles('./data2/speech-hebrew')
         if file.endswith('-avital4.wav')]
 }
 
@@ -169,7 +169,7 @@ def main():
         callbacks=[
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/is-speech-25-english-vs-hebrew-pre-freq-convs-and-rect-convs-l2-reg-0.03-FIXED-data-augmentation',
+            TensorBoard(log_dir='/mnt/nfs/is-speech-26-english-vs-hebrew-25-with-data2',
                         histogram_freq=20,
                         write_graph=True)
         ]
