@@ -7,13 +7,16 @@ matplotlib.use('Agg')
 from model import make_model
 
 import sys
-import numpy
+import numpy as np
+import numpy.random
 from scipy import ndimage
+import scipy.interpolate
 import random
 import socket
 import time
 import hashlib
 import librosa
+import matplotlib.pyplot as plt
 
 from keras.callbacks import ProgbarLogger, ModelCheckpoint, EarlyStopping, TensorBoard
 
@@ -48,12 +51,47 @@ val_samples = {
         if file.endswith('-avital4.wav')]
 }
 
+def add_gaussian_noise(spectrogram, scale):
+    """
+    'spectrogram' is a real-valued spectrogram (abs of complex STFT).
+
+    Add random Guassian noise on all frequency bins
+    """
+    return spectrogram + np.random.normal(0, scale, spectrogram.shape)
+
+def stretch(spectrogram, factor, num_columns):
+    """
+    'spectrogram' is a real-valued spectrogram (abs of complex STFT).
+
+    Stretch the spectrogram by 'factor' via linear interpolation,
+    then return the first 'num_columns' columns
+    """
+
+    stretched = np.zeros((spectrogram.shape[0], num_columns))
+
+    for column in xrange(num_columns):
+        fractional_column_in_source = column / factor
+
+        # Find two closest columns and their weight for linear interpolation
+        column1_in_source = int(fractional_column_in_source)
+        column2_in_source = column1_in_source + 1
+        column1_in_source_weight = fractional_column_in_source - column1_in_source
+        column2_in_source_weight = 1 - column1_in_source_weight
+
+        # Compute the new column
+        stretched[:, column] = (
+            spectrogram[:, column1_in_source] * column1_in_source_weight +
+            spectrogram[:, column2_in_source] * column2_in_source_weight
+        )
+
+    return stretched
+
 def normalize_spectrogram(spectrogram):
     spectrogram2 = spectrogram + 0.00001
-    return spectrogram2 / numpy.sum(spectrogram2, 0)
+    return spectrogram2 / np.sum(spectrogram2, 0)
 
 def main():
-    nb_val_samples = 512
+    nb_val_samples = 1024
 
     def data_generator():
         batch_size = 16
@@ -64,13 +102,38 @@ def main():
             for i in xrange(batch_size):
                 label = random.choice([0, 1])
                 sample = random.choice(samples[label])
-                sample_length = librosa.core.get_duration(filename=sample)
-                offset_start = random.uniform(0, sample_length-2)
-                sample_segment_data, sr = librosa.core.load(sample, sr=11025, offset=offset_start, duration=2)
-                sample_segment_spectrogram = numpy.expand_dims(normalize_spectrogram(numpy.absolute(librosa.stft(sample_segment_data, n_fft=512))), axis=0)
+                sample_length = librosa.core.get_duration(filename=sample) # XXX precompute
+
+                sample_duration = 3
+                offset_start = random.uniform(0, sample_length-sample_duration)
+                sample_segment_data, sr = librosa.core.load(
+                    sample, sr=11025, offset=offset_start, duration=duration
+                )
+                abs_spectrogram = np.absolute(librosa.stft(sample_segment_data, n_fft=512))
+
+                # Normalize first, so we can pick a good noise distribution
+                normalized_abs_spectrogram = normalize_spectrogram(abs_spectrogram)
+
+                # Add noise 40% of the time
+                if random.uniform(0, 1) < 0.4:
+                    noise_factor = random.uniform(0, 0.01)
+                    noisy_abs_spectrogram = add_gaussian_noise(
+                        normalized_abs_spectrogram, noise_factor
+                    )
+                else:
+                    noisy_abs_spectrogram = normalized_abs_spectrogram
+
+                stretched_abs_spectrogram = stretch(
+                    noisy_abs_spectrogram, random.uniform(0.7, 1.42), 173
+                )
+
+                # Then normalize again after adding noise (since sums
+                # of columns have changed)
+                normalized_abs_spectrogram_2 = normalize_spectrogram(stretched_abs_spectrogram)
+                sample_segment_spectrogram = np.expand_dims(normalized_abs_spectrogram_2, axis=0)
                 batch_data.append(sample_segment_spectrogram)
                 batch_labels.append(label)
-            yield (numpy.stack(batch_data), batch_labels)
+            yield (np.stack(batch_data), batch_labels)
 
     def val_data_generator():
         batch_size = 16
@@ -86,12 +149,12 @@ def main():
                 sample_length = librosa.core.get_duration(filename=sample)
                 offset_start = random.uniform(0, sample_length-2)
                 sample_segment_data, sr = librosa.core.load(sample, sr=11025, offset=offset_start, duration=2)
-                sample_segment_spectrogram = numpy.expand_dims(normalize_spectrogram(numpy.absolute(librosa.stft(sample_segment_data, n_fft=512))), axis=0)
+                sample_segment_spectrogram = np.expand_dims(normalize_spectrogram(np.absolute(librosa.stft(sample_segment_data, n_fft=512))), axis=0)
                 batch_data.append(sample_segment_spectrogram)
                 batch_labels.append(label)
-            yield (numpy.stack(batch_data), batch_labels)
+            yield (np.stack(batch_data), batch_labels)
 
-#    model.load_weights('weights.hdf5')
+    # model.load_weights('weights.hdf5')
 
     model = make_model()
     json_string = model.to_json()
@@ -115,6 +178,4 @@ def main():
 if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     main()
-
-
 
