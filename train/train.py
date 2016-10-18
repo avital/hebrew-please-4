@@ -75,8 +75,8 @@ def stretch(spectrogram, factor, num_columns):
         # Find two closest columns and their weight for linear interpolation
         column1_in_source = int(fractional_column_in_source)
         column2_in_source = column1_in_source + 1
-        column1_in_source_weight = fractional_column_in_source - column1_in_source
-        column2_in_source_weight = 1 - column1_in_source_weight
+        column2_in_source_weight = fractional_column_in_source - column1_in_source
+        column1_in_source_weight = 1 - column2_in_source_weight
 
         # Compute the new column
         stretched[:, column] = (
@@ -169,7 +169,7 @@ def main():
         callbacks=[
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/is-speech-24-english-vs-hebrew-pre-freq-convs-and-rect-convs-l2-reg-0.03-data-augmentation',
+            TensorBoard(log_dir='/mnt/nfs/is-speech-25-english-vs-hebrew-pre-freq-convs-and-rect-convs-l2-reg-0.03-FIXED-data-augmentation',
                         histogram_freq=20,
                         write_graph=True)
         ]
