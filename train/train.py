@@ -17,6 +17,7 @@ import time
 import hashlib
 import librosa
 import matplotlib.pyplot as plt
+import frequency_stats
 
 from keras.callbacks import ProgbarLogger, ModelCheckpoint, EarlyStopping, TensorBoard
 
@@ -86,15 +87,22 @@ def stretch(spectrogram, factor, num_columns):
 
     return stretched
 
+def center_unit(spectrogram):
+    '''
+    Apply a linear transformation on the spectrogram that
+    emperically gets each entry to have a distribution with
+    mean 0 and standard deviation 1
+    '''
+
+    return ((spectrogram.T - frequency_stats.means) / frequency_stats.stds).T
+
 def normalize_spectrogram(spectrogram):
     spectrogram2 = spectrogram + 0.00001
     return spectrogram2 / np.sum(spectrogram2, 0)
 
 def main():
-    nb_val_samples = 1024
-
     def data_generator():
-        batch_size = 16
+        batch_size = 32
         while True:
             random.seed(time.time())
             batch_data = []
@@ -130,31 +138,35 @@ def main():
                 # Then normalize again after adding noise (since sums
                 # of columns have changed)
                 normalized_abs_spectrogram_2 = normalize_spectrogram(stretched_abs_spectrogram)
-                sample_segment_spectrogram = np.expand_dims(normalized_abs_spectrogram_2, axis=0)
+                centered_unit_abs_spectrogram = center_unit(normalized_abs_spectrogram_2)
+
+                sample_segment_spectrogram = np.expand_dims(centered_unit_abs_spectrogram, axis=0)
                 batch_data.append(sample_segment_spectrogram)
                 batch_labels.append(label)
+
             yield (np.stack(batch_data), batch_labels)
 
-    def val_data_generator():
-        batch_size = 16
-        index_in_val_batch = 0
-        while True:
-            index_in_val_batch = (index_in_val_batch + batch_size) % nb_val_samples
-            random.seed(index_in_val_batch)
-            batch_data = []
-            batch_labels = []
-            for i in xrange(batch_size):
-                label = random.choice([0, 1])
-                sample = random.choice(val_samples[label])
-                sample_length = librosa.core.get_duration(filename=sample)
-                offset_start = random.uniform(0, sample_length-2)
-                sample_segment_data, sr = librosa.core.load(sample, sr=11025, offset=offset_start, duration=2)
-                sample_segment_spectrogram = np.expand_dims(normalize_spectrogram(np.absolute(librosa.stft(sample_segment_data, n_fft=512))), axis=0)
-                batch_data.append(sample_segment_spectrogram)
-                batch_labels.append(label)
-            yield (np.stack(batch_data), batch_labels)
+    def make_validation_data(nb_samples):
+        random.seed(1337)
+        data = []
+        labels = []
+
+        for i in xrange(nb_samples):
+            label = random.choice([0, 1])
+            sample = random.choice(val_samples[label])
+            sample_length = librosa.core.get_duration(filename=sample)
+            offset_start = random.uniform(0, sample_length-2)
+            sample_segment_data, sr = librosa.core.load(sample, sr=11025, offset=offset_start, duration=2)
+            sample_segment_spectrogram = np.expand_dims(center_unit(normalize_spectrogram(np.absolute(librosa.stft(sample_segment_data, n_fft=512)))), axis=0)
+            data.append(sample_segment_spectrogram)
+            labels.append(label)
+
+        return (np.stack(data), labels)
 
     # model.load_weights('weights.hdf5')
+
+    nb_val_samples = 1024
+    val_data = make_validation_data(nb_val_samples)
 
     model = make_model()
     json_string = model.to_json()
@@ -164,12 +176,11 @@ def main():
         data_generator(),
         samples_per_epoch=2048,
         nb_epoch=3000,
-        validation_data=val_data_generator(),
-        nb_val_samples=nb_val_samples,
+        validation_data=val_data,
         callbacks=[
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/is-speech-26-english-vs-hebrew-25-with-data2',
+            TensorBoard(log_dir='/mnt/nfs/is-speech-27-data2-massive-improvements',
                         histogram_freq=20,
                         write_graph=True)
         ]
