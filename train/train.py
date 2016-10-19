@@ -165,7 +165,7 @@ def main():
 
     # model.load_weights('weights.hdf5')
 
-    nb_val_samples = 1024
+    nb_val_samples = 512
     val_data = make_validation_data(nb_val_samples)
 
     model = make_model()
