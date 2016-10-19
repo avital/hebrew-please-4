@@ -94,7 +94,7 @@ def center_unit(spectrogram):
     mean 0 and standard deviation 1
     '''
 
-    return ((spectrogram.T - frequency_stats.means) / frequency_stats.stds).T
+    return ((spectrogram.T - frequency_stats.means[0:185]) / frequency_stats.stds[0:185]).T
 
 def normalize_spectrogram(spectrogram):
     spectrogram2 = spectrogram + 0.00001
@@ -102,7 +102,7 @@ def normalize_spectrogram(spectrogram):
 
 def main():
     def data_generator():
-        batch_size = 32
+        batch_size = 24
         while True:
             random.seed(time.time())
             batch_data = []
@@ -117,7 +117,7 @@ def main():
                 sample_segment_data, sr = librosa.core.load(
                     sample, sr=11025, offset=offset_start, duration=sample_duration
                 )
-                abs_spectrogram = np.absolute(librosa.stft(sample_segment_data, n_fft=512))
+                abs_spectrogram = np.absolute(librosa.stft(sample_segment_data, n_fft=512))[0:185, :]
 
                 # Normalize first, so we can pick a good noise distribution
                 normalized_abs_spectrogram = normalize_spectrogram(abs_spectrogram)
@@ -157,7 +157,7 @@ def main():
             sample_length = librosa.core.get_duration(filename=sample)
             offset_start = random.uniform(0, sample_length-2)
             sample_segment_data, sr = librosa.core.load(sample, sr=11025, offset=offset_start, duration=2)
-            sample_segment_spectrogram = np.expand_dims(center_unit(normalize_spectrogram(np.absolute(librosa.stft(sample_segment_data, n_fft=512)))), axis=0)
+            sample_segment_spectrogram = np.expand_dims(center_unit(normalize_spectrogram(np.absolute(librosa.stft(sample_segment_data, n_fft=512))[0:185, :])), axis=0)
             data.append(sample_segment_spectrogram)
             labels.append(label)
 
@@ -174,7 +174,7 @@ def main():
 
     model.fit_generator(
         data_generator(),
-        samples_per_epoch=2048,
+        samples_per_epoch=2040,
         nb_epoch=3000,
         validation_data=val_data,
         callbacks=[
