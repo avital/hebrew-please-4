@@ -180,7 +180,7 @@ def main():
         callbacks=[
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/is-speech-28-like-27-plus-l1-reg-0.03',
+            TensorBoard(log_dir='/mnt/nfs/is-speech-29-like-27-bump-l2-reg-to-0.1',
                         histogram_freq=20,
                         write_graph=True)
         ]
