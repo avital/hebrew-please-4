@@ -35,19 +35,19 @@ def make_model():
     model.add(MaxPooling2D(pool_size=(2, 1)))
 
     model.add(GaussianNoise(GAUSSIAN_NOISE))
-    model.add(Convolution2D(96, 3, 3, W_regularizer=l2(L2_REGULARIZATION)))
+    model.add(Convolution2D(72, 3, 3, W_regularizer=l2(L2_REGULARIZATION)))
     model.add(BatchNormalization())
     model.add(ELU())
-    model.add(Convolution2D(96, 3, 3, W_regularizer=l2(L2_REGULARIZATION)))
+    model.add(Convolution2D(72, 3, 3, W_regularizer=l2(L2_REGULARIZATION)))
     model.add(BatchNormalization())
     model.add(ELU())
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    model.add(Convolution2D(96, 1, 5, W_regularizer=l2(L2_REGULARIZATION)))
+    model.add(Convolution2D(72, 1, 5, W_regularizer=l2(L2_REGULARIZATION)))
     model.add(BatchNormalization())
     model.add(ELU())
     model.add(GaussianNoise(GAUSSIAN_NOISE))
-    model.add(Convolution2D(96, 1, 5, W_regularizer=l2(L2_REGULARIZATION)))
+    model.add(Convolution2D(72, 1, 5, W_regularizer=l2(L2_REGULARIZATION)))
     model.add(BatchNormalization())
     model.add(ELU())
     model.add(AveragePooling2D(pool_size=(1, 2)))
@@ -65,7 +65,7 @@ def make_model():
 
     model.add(Dropout(FC_DROPOUT))
     model.add(GaussianNoise(GAUSSIAN_NOISE))
-    model.add(Dense(512, W_regularizer=l2(L2_REGULARIZATION)))
+    model.add(Dense(384, W_regularizer=l2(L2_REGULARIZATION)))
 
     model.add(BatchNormalization())
     model.add(ELU())
