@@ -137,7 +137,7 @@ def main():
 
                 # Then normalize again after adding noise (since sums
                 # of columns have changed)
-                normalized_abs_spectrogram_2 = normalize_spectrogram(stretched_abs_spectrogram)
+                normalized_abs_spectrogram_2 = normalize_spectrogram(np.absolute(stretched_abs_spectrogram))
                 centered_unit_abs_spectrogram = center_unit(normalized_abs_spectrogram_2)
 
                 sample_segment_spectrogram = np.expand_dims(centered_unit_abs_spectrogram, axis=0)
