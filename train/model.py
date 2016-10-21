@@ -12,7 +12,7 @@ def make_model():
     model = Sequential()
 
     L2_REGULARIZATION = 0.03
-    L1_REGULARIZATION = 0
+    L1_REGULARIZATION = 0.03
     INITIAL_DROPOUT = 0
     DROPOUT = 0
     FC_DROPOUT = 0.5
