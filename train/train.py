@@ -31,25 +31,9 @@ def listwavfiles(path):
             for file in os.listdir(path)
             if file.endswith('.wav')]
 
-def smallhash(str):
-    """
-    Hashes str into a number in the range [0, 8)
-    """
-    bighash = hashlib.sha224(str).hexdigest()
-    return int(bighash[0], 16) % 8
-
 samples = {
-    1: [file for file in listwavfiles('./data2/speech-english')
-        if not file.endswith('-avital4.wav')],
-    0: [file for file in listwavfiles('./data2/speech-hebrew')
-        if not file.endswith('-avital4.wav')]
-}
-
-val_samples = {
-    1: [file for file in listwavfiles('./data2/speech-english')
-        if file.endswith('-avital4.wav')],
-    0: [file for file in listwavfiles('./data2/speech-hebrew')
-        if file.endswith('-avital4.wav')]
+    1: listwavfiles('./data2/speech-english'),
+    0: listwavfiles('./data2/speech-hebrew')
 }
 
 def add_gaussian_noise(spectrogram, scale):
@@ -100,6 +84,12 @@ def normalize_spectrogram(spectrogram):
     spectrogram2 = spectrogram + 0.00001
     return spectrogram2 / np.sum(spectrogram2, 0)
 
+# Given a 2-dimensional array, return an array with smaller
+# dimensions. Specifically, skip every (stride1-1) elements in
+# dimension 1 and (stride2-1) elements in dimension 2
+def reduce_dimensions(arr, stride1, stride2):
+    return arr[0:arr.shape[0]:stride1, 0:arr.shape[1]:stride2]
+
 def main():
     def data_generator():
         batch_size = 24
@@ -113,7 +103,7 @@ def main():
                 sample_length = librosa.core.get_duration(filename=sample) # XXX precompute
 
                 sample_duration = 3
-                offset_start = random.uniform(0, sample_length-sample_duration)
+                offset_start = random.uniform(0, sample_length*0.8-sample_duration)
                 sample_segment_data, sr = librosa.core.load(
                     sample, sr=11025, offset=offset_start, duration=sample_duration
                 )
@@ -140,7 +130,8 @@ def main():
                 normalized_abs_spectrogram_2 = normalize_spectrogram(np.absolute(stretched_abs_spectrogram))
                 centered_unit_abs_spectrogram = center_unit(normalized_abs_spectrogram_2)
 
-                sample_segment_spectrogram = np.expand_dims(centered_unit_abs_spectrogram, axis=0)
+                reduced_spectrogram = reduce_dimensions(centered_unit_abs_spectrogram, 3, 3)
+                sample_segment_spectrogram = np.expand_dims(reduced_spectrogram, axis=0)
                 batch_data.append(sample_segment_spectrogram)
                 batch_labels.append(label)
 
@@ -153,11 +144,21 @@ def main():
 
         for i in xrange(nb_samples):
             label = random.choice([0, 1])
-            sample = random.choice(val_samples[label])
+            sample = random.choice(samples[label])
             sample_length = librosa.core.get_duration(filename=sample)
-            offset_start = random.uniform(0, sample_length-2)
+            offset_start = random.uniform(sample_length*0.8, sample_length-2)
             sample_segment_data, sr = librosa.core.load(sample, sr=11025, offset=offset_start, duration=2)
-            sample_segment_spectrogram = np.expand_dims(center_unit(normalize_spectrogram(np.absolute(librosa.stft(sample_segment_data, n_fft=512))[0:185, :])), axis=0)
+            sample_segment_spectrogram = np.expand_dims(
+                reduce_dimensions(
+                    center_unit(
+                        normalize_spectrogram(
+                            np.absolute(
+                                librosa.stft(sample_segment_data, n_fft=512)
+                            )[0:185, :]
+                        )
+                    ), 3, 3
+                ), axis=0
+            )
             data.append(sample_segment_spectrogram)
             labels.append(label)
 
