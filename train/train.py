@@ -92,7 +92,7 @@ def reduce_dimensions(arr, stride1, stride2):
 
 def main():
     def data_generator():
-        batch_size = 24
+        batch_size = 128
         while True:
             random.seed(time.time())
             batch_data = []
@@ -175,13 +175,13 @@ def main():
 
     model.fit_generator(
         data_generator(),
-        samples_per_epoch=2040,
+        samples_per_epoch=2048,
         nb_epoch=3000,
         validation_data=val_data,
         callbacks=[
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/HebrewPlease-1--l2-0.03-l1-0.03',
+            TensorBoard(log_dir='/mnt/nfs/HebrewPleaseSimple1',
                         histogram_freq=20,
                         write_graph=True)
         ]
