@@ -21,6 +21,12 @@ import frequency_stats
 
 from keras.callbacks import ProgbarLogger, ModelCheckpoint, EarlyStopping, TensorBoard
 
+# Work around version mismatch between TensorFlow and Keras.
+# See https://github.com/fchollet/keras/issues/3857
+import tensorflow
+from tensorflow.python.ops import control_flow_ops
+tensorflow.python.control_flow_ops = control_flow_ops
+
 import os
 
 def listwavfiles(path):
