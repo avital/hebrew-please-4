@@ -96,6 +96,32 @@ def normalize_spectrogram(spectrogram):
 def reduce_dimensions(arr, stride1, stride2):
     return arr[0:arr.shape[0]:stride1, 0:arr.shape[1]:stride2]
 
+def random_offset(audio_duration, segment_duration, start_decile, end_decile):
+    """Split 'audio_duration' seconds into even "parts" of approximate
+    minute length.  Return a random initial offset which will be used
+    to extract a segment 'segment_duration' seconds long. The segment
+    is guaranteed to be in the [start_decile, end_decile) decile of
+    the part.
+
+    """
+    audio_duration = float(audio_duration)
+    num_parts = int(audio_duration / 60)
+    part_length = audio_duration / num_parts
+    decile_length = part_length / 10
+    # Make sure we have enough random choices available. '*2' just a heuristic.
+    assert segment_duration*2 <= decile_length, (segment_duration, decile_length)
+
+    chosen_part = random.randint(0, num_parts-1)
+    chosen_offset_in_part = random.uniform(
+        start_decile*decile_length,
+        end_decile*decile_length-segment_duration
+    )
+
+    chosen_offset = chosen_part*part_length + chosen_offset_in_part
+    assert(chosen_offset >= 0)
+    assert(chosen_offset < audio_duration-segment_duration)
+    return chosen_offset
+
 def main():
     def data_generator():
         batch_size = 128
@@ -109,7 +135,7 @@ def main():
                 sample_length = librosa.core.get_duration(filename=sample) # XXX precompute
 
                 sample_duration = 3
-                offset_start = random.uniform(0, sample_length*0.8-sample_duration)
+                offset_start = random_offset(sample_length, sample_duration, 0, 8)
                 sample_segment_data, sr = librosa.core.load(
                     sample, sr=11025, offset=offset_start, duration=sample_duration
                 )
@@ -152,8 +178,11 @@ def main():
             label = random.choice([0, 1])
             sample = random.choice(samples[label])
             sample_length = librosa.core.get_duration(filename=sample)
-            offset_start = random.uniform(sample_length*0.8, sample_length-2)
-            sample_segment_data, sr = librosa.core.load(sample, sr=11025, offset=offset_start, duration=2)
+            sample_duration = 2
+            offset_start = random_offset(sample_length, sample_duration, 8, 10)
+            sample_segment_data, sr = librosa.core.load(
+                sample, sr=11025, offset=offset_start, duration=sample_duration
+            )
             sample_segment_spectrogram = np.expand_dims(
                 reduce_dimensions(
                     center_unit(
