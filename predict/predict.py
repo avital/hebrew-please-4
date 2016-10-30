@@ -21,6 +21,12 @@ import frequency_stats
 import tensorflow as tf
 from keras import backend as K
 
+# Work around version mismatch between TensorFlow and Keras.
+# See https://github.com/fchollet/keras/issues/3857
+import tensorflow
+from tensorflow.python.ops import control_flow_ops
+tensorflow.python.control_flow_ops = control_flow_ops
+
 audio = pyaudio.PyAudio()
 
 RATE = 11025
@@ -79,13 +85,19 @@ def normalize_spectrogram(spectrogram):
     spectrogram2 = spectrogram + 0.00001
     return spectrogram2 / numpy.sum(spectrogram2, 0)
 
+# Given a 2-dimensional array, return an array with smaller
+# dimensions. Specifically, skip every (stride1-1) elements in
+# dimension 1 and (stride2-1) elements in dimension 2
+def reduce_dimensions(arr, stride1, stride2):
+    return arr[0:arr.shape[0]:stride1, 0:arr.shape[1]:stride2]
+
 def test_segment(segment):
     global graph
 
     with graph.as_default():
         abs_spectrogram = numpy.absolute(librosa.stft(segment, n_fft=512))
         abs_spectrogram = abs_spectrogram[0:185, 0:173]
-        normalized_spectrogram = center_unit(normalize_spectrogram(abs_spectrogram))
+        normalized_spectrogram = reduce_dimensions(center_unit(normalize_spectrogram(abs_spectrogram)), 3, 3)
         sample_segment_spectrogram = numpy.expand_dims(normalized_spectrogram, axis=0)
         sample_segment_spectrogram = numpy.expand_dims(sample_segment_spectrogram, axis=0)
         prediction = model.predict(sample_segment_spectrogram)[0][0]
