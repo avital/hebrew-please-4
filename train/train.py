@@ -202,13 +202,13 @@ class AdditionalValidation(Callback):
         self.params['metrics'].extend(['avital_val_acc', 'avital_val_loss'])
 
     def on_epoch_end(self, batch, logs={}):
-        (logs['yt_val_loss', 'yt_val_acc']) = self.model.evaluate(
+        (logs['yt_val_loss'], logs['yt_val_acc']) = self.model.evaluate(
             self.yt_val_data[0], self.yt_val_data[1]
         )
-        (logs['wli_val_loss'], logs['wli_val_acc']) = wli_evaluation = self.model.evaluate(
+        (logs['wli_val_loss'], logs['wli_val_acc']) = self.model.evaluate(
             self.wli_val_data[0], self.wli_val_data[1]
         )
-        (logs['avital_val_loss'], logs['avital_val_acc']) = wli_evaluation = self.model.evaluate(
+        (logs['avital_val_loss'], logs['avital_val_acc']) = self.model.evaluate(
             self.avital_val_data[0], self.avital_val_data[1]
         )
 
