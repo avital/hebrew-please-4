@@ -172,7 +172,7 @@ def make_validation_data(nb_samples, samples, make_offset):
 
 class AdditionalValidation(Callback):
     def on_train_begin(self, logs={}):
-        nb_val_samples = 512
+        nb_val_samples = 256
 
         self.yt_val_data = make_validation_data(
             nb_val_samples,
@@ -196,7 +196,7 @@ class AdditionalValidation(Callback):
             nb_val_samples,
             avital_val_samples,
             make_offset = lambda audio_duration, sample_duration: random.uniform(
-                0, sample_length-audio_duration
+                0, audio_duration-audio_duration
             )
         )
         self.params['metrics'].extend(['avital_val_acc', 'avital_val_loss'])
@@ -261,7 +261,7 @@ def main():
 
     # model.load_weights('weights.hdf5')
 
-    nb_val_samples = 512
+    nb_val_samples = 256
     val_data = make_validation_data(
         nb_val_samples,
         basic_samples,
