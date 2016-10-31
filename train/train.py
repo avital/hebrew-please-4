@@ -19,7 +19,7 @@ import librosa
 import matplotlib.pyplot as plt
 import frequency_stats
 
-from keras.callbacks import ProgbarLogger, ModelCheckpoint, EarlyStopping, TensorBoard
+from keras.callbacks import ProgbarLogger, ModelCheckpoint, EarlyStopping, TensorBoard, Callback
 
 # Work around version mismatch between TensorFlow and Keras.
 # See https://github.com/fchollet/keras/issues/3857
@@ -37,9 +37,27 @@ def listwavfiles(path):
             for file in os.listdir(path)
             if file.endswith('.wav')]
 
-samples = {
+basic_samples = {
     1: listwavfiles('./data2/speech-english'),
     0: listwavfiles('./data2/speech-hebrew')
+}
+
+# Validation samples from other YouTube videos
+yt_val_samples = {
+    1: listwavfiles('./data2/speech-english-yt-val'),
+    0: listwavfiles('./data2/speech-hebrew-yt-val')
+}
+
+# Validation samples from other wide-languge-index audio files
+wli_val_samples = {
+    1: listwavfiles('./data2/speech-english-wli-val'),
+    0: listwavfiles('./data2/speech-hebrew-wli-val')
+}
+
+# Validation samples from Avital's voice
+avital_val_samples = {
+    1: listwavfiles('./data2/speech-english-avital-val'),
+    0: listwavfiles('./data2/speech-hebrew-avital-val')
 }
 
 def add_gaussian_noise(spectrogram, scale):
@@ -122,6 +140,78 @@ def random_offset(audio_duration, segment_duration, start_decile, end_decile):
     assert(chosen_offset < audio_duration-segment_duration)
     return chosen_offset
 
+def make_validation_data(nb_samples, samples, make_offset):
+    random.seed(1337)
+    data = []
+    labels = []
+
+    for i in xrange(nb_samples):
+        label = random.choice([0, 1])
+        sample = random.choice(samples[label])
+        audio_duration = librosa.core.get_duration(filename=sample)
+        sample_duration = 2
+        offset_start = make_offset(audio_duration, sample_duration)
+        sample_segment_data, sr = librosa.core.load(
+            sample, sr=11025, offset=offset_start, duration=sample_duration
+        )
+        sample_segment_spectrogram = np.expand_dims(
+            reduce_dimensions(
+                center_unit(
+                    normalize_spectrogram(
+                        np.absolute(
+                            librosa.stft(sample_segment_data, n_fft=512)
+                        )[0:185, :]
+                    )
+                ), 3, 3
+            ), axis=0
+        )
+        data.append(sample_segment_spectrogram)
+        labels.append(label)
+
+    return (np.stack(data), labels)
+
+class AdditionalValidation(Callback):
+    def on_train_begin(self, logs={}):
+        nb_val_samples = 512
+
+        self.yt_val_data = make_validation_data(
+            nb_val_samples,
+            yt_val_samples,
+            make_offset = lambda audio_duration, sample_duration: random.uniform(
+                0, audio_duration-sample_duration
+            )
+        )
+        self.params['metrics'].extend(['yt_val_acc', 'yt_val_loss'])
+
+        self.wli_val_data = make_validation_data(
+            nb_val_samples,
+            wli_val_samples,
+            make_offset = lambda audio_duration, sample_duration: random.uniform(
+                0, audio_duration-sample_duration
+            )
+        )
+        self.params['metrics'].extend(['wli_val_acc', 'wli_val_loss'])
+
+        self.avital_val_data = make_validation_data(
+            nb_val_samples,
+            avital_val_samples,
+            make_offset = lambda audio_duration, sample_duration: random.uniform(
+                0, sample_length-audio_duration
+            )
+        )
+        self.params['metrics'].extend(['avital_val_acc', 'avital_val_loss'])
+
+    def on_epoch_end(self, batch, logs={}):
+        (logs['yt_val_loss', 'yt_val_acc']) = self.model.evaluate(
+            self.yt_val_data[0], self.yt_val_data[1]
+        )
+        (logs['wli_val_loss'], logs['wli_val_acc']) = wli_evaluation = self.model.evaluate(
+            self.wli_val_data[0], self.wli_val_data[1]
+        )
+        (logs['avital_val_loss'], logs['avital_val_acc']) = wli_evaluation = self.model.evaluate(
+            self.avital_val_data[0], self.avital_val_data[1]
+        )
+
 def main():
     def data_generator():
         batch_size = 128
@@ -131,11 +221,11 @@ def main():
             batch_labels = []
             for i in xrange(batch_size):
                 label = random.choice([0, 1])
-                sample = random.choice(samples[label])
-                sample_length = librosa.core.get_duration(filename=sample) # XXX precompute
+                sample = random.choice(basic_samples[label])
+                audio_duration = librosa.core.get_duration(filename=sample) # XXX precompute
 
                 sample_duration = 3
-                offset_start = random_offset(sample_length, sample_duration, 0, 8)
+                offset_start = random_offset(audio_duration, sample_duration, 0, 8)
                 sample_segment_data, sr = librosa.core.load(
                     sample, sr=11025, offset=offset_start, duration=sample_duration
                 )
@@ -169,40 +259,16 @@ def main():
 
             yield (np.stack(batch_data), batch_labels)
 
-    def make_validation_data(nb_samples):
-        random.seed(1337)
-        data = []
-        labels = []
-
-        for i in xrange(nb_samples):
-            label = random.choice([0, 1])
-            sample = random.choice(samples[label])
-            sample_length = librosa.core.get_duration(filename=sample)
-            sample_duration = 2
-            offset_start = random_offset(sample_length, sample_duration, 8, 10)
-            sample_segment_data, sr = librosa.core.load(
-                sample, sr=11025, offset=offset_start, duration=sample_duration
-            )
-            sample_segment_spectrogram = np.expand_dims(
-                reduce_dimensions(
-                    center_unit(
-                        normalize_spectrogram(
-                            np.absolute(
-                                librosa.stft(sample_segment_data, n_fft=512)
-                            )[0:185, :]
-                        )
-                    ), 3, 3
-                ), axis=0
-            )
-            data.append(sample_segment_spectrogram)
-            labels.append(label)
-
-        return (np.stack(data), labels)
-
     # model.load_weights('weights.hdf5')
 
     nb_val_samples = 512
-    val_data = make_validation_data(nb_val_samples)
+    val_data = make_validation_data(
+        nb_val_samples,
+        basic_samples,
+        make_offset=lambda audio_duration, sample_duration: random_offset(
+            audio_duration, sample_duration, 8, 10
+        )
+    )
 
     model = make_model()
     json_string = model.to_json()
@@ -214,9 +280,10 @@ def main():
         nb_epoch=3000,
         validation_data=val_data,
         callbacks=[
+            AdditionalValidation(),
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/HebrewPleaseSimple1',
+            TensorBoard(log_dir='/mnt/nfs/HebrewPleaseSimple3-more-validation-sets',
                         histogram_freq=20,
                         write_graph=True)
         ]
