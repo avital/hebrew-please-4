@@ -38,8 +38,8 @@ def listwavfiles(path):
             if file.endswith('.wav')]
 
 basic_samples = {
-    1: listwavfiles('./data2/speech-english'),
-    0: listwavfiles('./data2/speech-hebrew')
+    1: listwavfiles('./data2/speech-english') + listwavfiles('./data2/speech-english-chunk-2'),
+    0: listwavfiles('./data2/speech-hebrew') + listwavfiles('./data2/speech-hebrew-chunk-2')
 }
 
 # Validation samples from other YouTube videos
@@ -283,7 +283,7 @@ def main():
             AdditionalValidation(),
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/HebrewPleaseSimple3-more-validation-sets',
+            TensorBoard(log_dir='/mnt/nfs/HebrewPleaseSimple4-yt-chunk-2',
                         histogram_freq=20,
                         write_graph=True)
         ]
