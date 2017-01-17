@@ -1,5 +1,6 @@
-from keras.models import Sequential
+from keras.models import Sequential, Model
 from keras.optimizers import Adam, Adadelta
+from keras.layers import Input
 from keras.layers.core import Dense, Activation, Flatten, Dropout
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D, AveragePooling2D
 from keras.layers.advanced_activations import LeakyReLU
@@ -14,46 +15,48 @@ def make_model():
     L2_REGULARIZATION = 0.03
     FC_DROPOUT = 0.5
 
-    model.add(ZeroPadding2D((1, 1), input_shape=(1, 62, 58)))
-    model.add(Convolution2D(64, 3, 3, W_regularizer=l2(L2_REGULARIZATION)))
-    model.add(BatchNormalization())
-    model.add(ELU())
-    model.add(ZeroPadding2D((1, 1)))
-    model.add(Convolution2D(64, 3, 3, W_regularizer=l2(L2_REGULARIZATION)))
-    model.add(BatchNormalization())
-    model.add(ELU())
+    main_input = Input(shape=(1, 62, 58))
+    x = ZeroPadding2D((1, 1))(main_input)
+    x = Convolution2D(64, 3, 3, W_regularizer=l2(L2_REGULARIZATION))(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
+    x = ZeroPadding2D((1, 1))(x)
+    x = Convolution2D(64, 3, 3, W_regularizer=l2(L2_REGULARIZATION))(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
 
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    x = MaxPooling2D(pool_size=(2, 2))(x)
 
-    model.add(ZeroPadding2D((1, 1)))
-    model.add(Convolution2D(64, 3, 3, W_regularizer=l2(L2_REGULARIZATION)))
-    model.add(BatchNormalization())
-    model.add(ELU())
-    model.add(ZeroPadding2D((1, 1)))
-    model.add(Convolution2D(64, 3, 3, W_regularizer=l2(L2_REGULARIZATION)))
-    model.add(BatchNormalization())
-    model.add(ELU())
+    x = ZeroPadding2D((1, 1))(x)
+    x = Convolution2D(64, 3, 3, W_regularizer=l2(L2_REGULARIZATION))(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
+    x = ZeroPadding2D((1, 1))(x)
+    x = Convolution2D(64, 3, 3, W_regularizer=l2(L2_REGULARIZATION))(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
 
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    x = MaxPooling2D(pool_size=(2, 2))(x)
     # Dimensions are 15x14, which correspond to (time, frequency) xcxc
 
-    model.add(Flatten())
+    x = Flatten()(x)
 
-    model.add(Dropout(FC_DROPOUT))
-    model.add(Dense(196))
-    model.add(BatchNormalization())
-    model.add(ELU())
+    x = Dropout(FC_DROPOUT)(x)
+    x = Dense(196)(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
 
-    model.add(Dropout(FC_DROPOUT))
-    model.add(Dense(196))
-    model.add(BatchNormalization())
-    model.add(ELU())
+    x = Dropout(FC_DROPOUT)(x)
+    x = Dense(196)(x)
+    x = BatchNormalization()(x)
+    x = ELU()(x)
 
-    model.add(Dropout(FC_DROPOUT))
+    x = Dropout(FC_DROPOUT)(x)
 
-    model.add(Dense(1))
-    model.add(Activation('sigmoid'))
+    x = Dense(1)(x)
+    predicted_label = Activation('sigmoid')(x)
 
+    model = Model(input=[main_input], output=[predicted_label])
     model.compile(optimizer=Adadelta(),
                   loss='binary_crossentropy',
                   metrics=['accuracy'])

@@ -78,7 +78,7 @@ def stretch(spectrogram, factor, num_columns):
 
     stretched = np.zeros((spectrogram.shape[0], num_columns))
 
-    for column in xrange(num_columns):
+    for column in range(num_columns):
         fractional_column_in_source = column / factor
 
         # Find two closest columns and their weight for linear interpolation
@@ -145,7 +145,7 @@ def make_validation_data(nb_samples, samples, make_offset):
     data = []
     labels = []
 
-    for i in xrange(nb_samples):
+    for i in range(nb_samples):
         label = random.choice([0, 1])
         sample = random.choice(samples[label])
         audio_duration = librosa.core.get_duration(filename=sample)
@@ -219,7 +219,7 @@ def main():
             random.seed(time.time())
             batch_data = []
             batch_labels = []
-            for i in xrange(batch_size):
+            for i in range(batch_size):
                 label = random.choice([0, 1])
                 sample = random.choice(basic_samples[label])
                 audio_duration = librosa.core.get_duration(filename=sample) # XXX precompute
