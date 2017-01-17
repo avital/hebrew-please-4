@@ -78,7 +78,7 @@ def stretch(spectrogram, factor, num_columns):
 
     stretched = np.zeros((spectrogram.shape[0], num_columns))
 
-    for column in range(num_columns):
+    for column in xrange(num_columns):
         fractional_column_in_source = column / factor
 
         # Find two closest columns and their weight for linear interpolation
@@ -145,7 +145,7 @@ def make_validation_data(nb_samples, samples, make_offset):
     data = []
     labels = []
 
-    for i in range(nb_samples):
+    for i in xrange(nb_samples):
         label = random.choice([0, 1])
         sample = random.choice(samples[label])
         audio_duration = librosa.core.get_duration(filename=sample)
@@ -219,7 +219,7 @@ def main():
             random.seed(time.time())
             batch_data = []
             batch_labels = []
-            for i in range(batch_size):
+            for i in xrange(batch_size):
                 label = random.choice([0, 1])
                 sample = random.choice(basic_samples[label])
                 audio_duration = librosa.core.get_duration(filename=sample) # XXX precompute
@@ -276,14 +276,14 @@ def main():
 
     model.fit_generator(
         data_generator(),
-        samples_per_epoch=2048,
+        samples_per_epoch=1024,
         nb_epoch=3000,
         validation_data=val_data,
         callbacks=[
             AdditionalValidation(),
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/HebrewPleaseSimple4-yt-chunk-2',
+            TensorBoard(log_dir='/mnt/nfs/HebPlz2017-test2',
                         histogram_freq=20,
                         write_graph=True)
         ]
