@@ -196,7 +196,7 @@ class AdditionalValidation(Callback):
             nb_val_samples,
             avital_val_samples,
             make_offset = lambda audio_duration, sample_duration: random.uniform(
-                0, audio_duration-audio_duration
+                0, audio_duration-sample_duration
             )
         )
         self.params['metrics'].extend(['avital_val_acc', 'avital_val_loss'])
