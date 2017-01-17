@@ -137,7 +137,7 @@ def random_offset(audio_duration, segment_duration, start_decile, end_decile):
     assert(chosen_offset < audio_duration-segment_duration)
     return chosen_offset
 
-def make_validation_data(nb_samples, samples, make_offset):
+def make_validation_data(nb_samples, samples, make_offset, with_domains=True):
     random.seed(1337)
     data = []
     labels = []
@@ -165,9 +165,21 @@ def make_validation_data(nb_samples, samples, make_offset):
         data.append(sample_segment_spectrogram)
         labels.append(label)
 
-    return (np.stack(data), labels)
+    labels = np.array(labels)
+
+    if with_domains:
+        return (
+            {'input': np.stack(data)},
+            {'predicted_label': labels, 'predicted_domain': np.zeros(labels.shape)}, # output
+            {'predicted_label': np.ones(labels.shape), 'predicted_domain': np.zeros(labels.shape)} # weights
+        )
+    else:
+        return (np.stack(data), labels)
 
 class AdditionalValidation(Callback):
+    def __init__(self, label_model):
+        self.label_model = label_model
+
     def on_train_begin(self, logs={}):
         nb_val_samples = 256
 
@@ -176,7 +188,8 @@ class AdditionalValidation(Callback):
             yt_val_samples,
             make_offset = lambda audio_duration, sample_duration: random.uniform(
                 0, audio_duration-sample_duration
-            )
+            ),
+            with_domains=False
         )
         self.params['metrics'].extend(['yt_val_acc', 'yt_val_loss'])
 
@@ -185,17 +198,14 @@ class AdditionalValidation(Callback):
             wli_val_samples,
             make_offset = lambda audio_duration, sample_duration: random.uniform(
                 0, audio_duration-sample_duration
-            )
+            ),
+            with_domains=False
         )
         self.params['metrics'].extend(['wli_val_acc', 'wli_val_loss'])
 
     def on_epoch_end(self, batch, logs={}):
-        (logs['yt_val_loss'], logs['yt_val_acc']) = self.model.evaluate(
-            self.yt_val_data[0], self.yt_val_data[1]
-        )
-        (logs['wli_val_loss'], logs['wli_val_acc']) = self.model.evaluate(
-            self.wli_val_data[0], self.wli_val_data[1]
-        )
+        (logs['yt_val_loss'], logs['yt_val_acc']) = self.label_model.evaluate(*self.yt_val_data)
+        (logs['wli_val_loss'], logs['wli_val_acc']) = self.label_model.evaluate(*self.wli_val_data)
 
 def main():
     def data_generator():
@@ -204,9 +214,23 @@ def main():
             random.seed(time.time())
             batch_data = []
             batch_labels = []
+            batch_labels_w = []
+            batch_domains = []
+            batch_domains_w = []
+
             for i in xrange(batch_size):
-                label = random.choice([0, 1])
-                sample = random.choice(yt_samples[label])
+                yt_or_wli = random.choice(['yt', 'wli'])
+                if yt_or_wli == 'yt':
+                    domain = 1 # YouTube domain
+                    label = random.choice([0, 1])
+                    label_weight = 1
+                    sample = random.choice(yt_samples[label])
+                else:
+                    domain = 0 # wide-language-index domain
+                    label = 1 # unimportant; weight is 0
+                    label_weight = 0
+                    sample = random.choice(wli_unlabelled_samples)
+
                 audio_duration = librosa.core.get_duration(filename=sample) # XXX precompute
 
                 sample_duration = 3
@@ -239,10 +263,17 @@ def main():
 
                 reduced_spectrogram = reduce_dimensions(centered_unit_abs_spectrogram, 3, 3)
                 sample_segment_spectrogram = np.expand_dims(reduced_spectrogram, axis=0)
+
                 batch_data.append(sample_segment_spectrogram)
                 batch_labels.append(label)
+                batch_labels_w.append(label_weight)
+                batch_domains.append(domain)
+                batch_domains_w.append(1)
 
-            yield (np.stack(batch_data), batch_labels)
+            yield ({'input': np.stack(batch_data)}, # input
+                   {'predicted_label': np.array(batch_labels), 'predicted_domain': np.array(batch_domains)}, # output
+                   {'predicted_label': np.array(batch_labels_w), 'predicted_domain': np.array(batch_domains_w)} # weights
+)
 
     # model.load_weights('weights.hdf5')
 
@@ -255,8 +286,8 @@ def main():
         )
     )
 
-    model = make_model()
-    json_string = model.to_json()
+    (model, label_model) = make_model()
+    json_string = label_model.to_json()
     open('architecture.json', 'w').write(json_string)
 
     model.fit_generator(
@@ -265,10 +296,10 @@ def main():
         nb_epoch=3000,
         validation_data=val_data,
         callbacks=[
-            AdditionalValidation(),
+            AdditionalValidation(label_model),
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/HebPlz2017-yt-to-wli',
+            TensorBoard(log_dir='/mnt/nfs/HebPlz2017-yt-to-wli-DANN',
                         histogram_freq=20,
                         write_graph=True)
         ]

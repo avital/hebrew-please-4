@@ -8,14 +8,16 @@ from keras.regularizers import l2, activity_l2, l1, l1l2
 from keras.layers.advanced_activations import ELU
 from keras.layers.normalization import BatchNormalization
 from keras.layers.noise import GaussianNoise
+from grl import GradientReversal
 
 def make_model():
     model = Sequential()
 
     L2_REGULARIZATION = 0.03
     FC_DROPOUT = 0.5
+    DOMAIN_CLASSIFIER_GRL_FACTOR = 1.0
 
-    main_input = Input(shape=(1, 62, 58))
+    main_input = Input(shape=(1, 62, 58), name='input')
     x = ZeroPadding2D((1, 1))(main_input)
     x = Convolution2D(64, 3, 3, W_regularizer=l2(L2_REGULARIZATION))(x)
     x = BatchNormalization()(x)
@@ -41,6 +43,22 @@ def make_model():
 
     x = Flatten()(x)
 
+    domain_classifier = GradientReversal(DOMAIN_CLASSIFIER_GRL_FACTOR)(x)
+    domain_classifier = Dropout(FC_DROPOUT)(x)
+    domain_classifier = Dense(196)(domain_classifier)
+    domain_classifier = BatchNormalization()(domain_classifier)
+    domain_classifier = ELU()(domain_classifier)
+
+    domain_classifier = Dropout(FC_DROPOUT)(domain_classifier)
+    domain_classifier = Dense(196)(domain_classifier)
+    domain_classifier = BatchNormalization()(domain_classifier)
+    domain_classifier = ELU()(domain_classifier)
+
+    domain_classifier = Dropout(FC_DROPOUT)(domain_classifier)
+
+    domain_classifier = Dense(1)(domain_classifier)
+    predicted_domain = Activation('sigmoid', name='predicted_domain')(domain_classifier)
+
     x = Dropout(FC_DROPOUT)(x)
     x = Dense(196)(x)
     x = BatchNormalization()(x)
@@ -54,11 +72,16 @@ def make_model():
     x = Dropout(FC_DROPOUT)(x)
 
     x = Dense(1)(x)
-    predicted_label = Activation('sigmoid')(x)
+    predicted_label = Activation('sigmoid', name='predicted_label')(x)
 
-    model = Model(input=[main_input], output=[predicted_label])
-    model.compile(optimizer=Adadelta(),
-                  loss='binary_crossentropy',
-                  metrics=['accuracy'])
+    full_model = Model(input=main_input, output=[predicted_label, predicted_domain])
+    full_model.compile(optimizer=Adadelta(),
+                       loss='binary_crossentropy',
+                       metrics=['accuracy'])
 
-    return model
+    label_only_model = Model(input=main_input, output=predicted_label)
+    label_only_model.compile(optimizer=Adadelta(),
+                             loss='binary_crossentropy',
+                             metrics=['accuracy'])
+
+    return (full_model, label_only_model)
