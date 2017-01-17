@@ -37,27 +37,24 @@ def listwavfiles(path):
             for file in os.listdir(path)
             if file.endswith('.wav')]
 
-basic_samples = {
-    1: listwavfiles('./data2/speech-english') + listwavfiles('./data2/speech-english-chunk-2'),
-    0: listwavfiles('./data2/speech-hebrew') + listwavfiles('./data2/speech-hebrew-chunk-2')
+yt_samples = {
+    1: listwavfiles('./data3/yt-english'),
+    0: listwavfiles('./data3/yt-hebrew')
 }
 
 # Validation samples from other YouTube videos
 yt_val_samples = {
-    1: listwavfiles('./data2/speech-english-yt-val'),
-    0: listwavfiles('./data2/speech-hebrew-yt-val')
+    1: listwavfiles('./data3/yt-english-val'),
+    0: listwavfiles('./data3/yt-hebrew-val')
 }
 
-# Validation samples from other wide-languge-index audio files
+# Unlabelled wide-language-index samples for domain adaptation
+wli_unlabelled_samples = listwavfiles('./data3/wli-unlabelled')
+
+# Labelled wide-language-index samples for validation
 wli_val_samples = {
-    1: listwavfiles('./data2/speech-english-wli-val'),
-    0: listwavfiles('./data2/speech-hebrew-wli-val')
-}
-
-# Validation samples from Avital's voice
-avital_val_samples = {
-    1: listwavfiles('./data2/speech-english-avital-val'),
-    0: listwavfiles('./data2/speech-hebrew-avital-val')
+    1: listwavfiles('./data3/wli-english-val'),
+    0: listwavfiles('./data3/wli-hebrew-val')
 }
 
 def add_gaussian_noise(spectrogram, scale):
@@ -192,24 +189,12 @@ class AdditionalValidation(Callback):
         )
         self.params['metrics'].extend(['wli_val_acc', 'wli_val_loss'])
 
-        self.avital_val_data = make_validation_data(
-            nb_val_samples,
-            avital_val_samples,
-            make_offset = lambda audio_duration, sample_duration: random.uniform(
-                0, audio_duration-sample_duration
-            )
-        )
-        self.params['metrics'].extend(['avital_val_acc', 'avital_val_loss'])
-
     def on_epoch_end(self, batch, logs={}):
         (logs['yt_val_loss'], logs['yt_val_acc']) = self.model.evaluate(
             self.yt_val_data[0], self.yt_val_data[1]
         )
         (logs['wli_val_loss'], logs['wli_val_acc']) = self.model.evaluate(
             self.wli_val_data[0], self.wli_val_data[1]
-        )
-        (logs['avital_val_loss'], logs['avital_val_acc']) = self.model.evaluate(
-            self.avital_val_data[0], self.avital_val_data[1]
         )
 
 def main():
@@ -221,7 +206,7 @@ def main():
             batch_labels = []
             for i in xrange(batch_size):
                 label = random.choice([0, 1])
-                sample = random.choice(basic_samples[label])
+                sample = random.choice(yt_samples[label])
                 audio_duration = librosa.core.get_duration(filename=sample) # XXX precompute
 
                 sample_duration = 3
@@ -264,7 +249,7 @@ def main():
     nb_val_samples = 256
     val_data = make_validation_data(
         nb_val_samples,
-        basic_samples,
+        yt_samples,
         make_offset=lambda audio_duration, sample_duration: random_offset(
             audio_duration, sample_duration, 8, 10
         )
@@ -283,7 +268,7 @@ def main():
             AdditionalValidation(),
             ModelCheckpoint("weights.hdf5", monitor="val_acc", save_best_only=True),
 #            EarlyStopping(monitor="val_acc", patience=8),
-            TensorBoard(log_dir='/mnt/nfs/HebPlz2017-test2',
+            TensorBoard(log_dir='/mnt/nfs/HebPlz2017-yt-to-wli',
                         histogram_freq=20,
                         write_graph=True)
         ]
